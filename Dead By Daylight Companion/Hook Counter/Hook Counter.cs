@@ -85,9 +85,12 @@ namespace Dead_By_Daylight_Companion.Hook_Counter {
             [In, Optional] IntPtr lpSource,
             [In] int dwMessageId,
             [In] int dwLanguageId,
-            out StringBuilder lpBuffer,
+            ref IntPtr lpBuffer,
             [In] int nSize,
             [In, Optional] IntPtr Arguments);
+
+        [DllImport("Kernel32.dll")]
+        static extern IntPtr LocaLFree([In] IntPtr hMem);
 
         [DllImport("Kernel32.dll")]
         static extern void SetLastError(uint dwErrCode);
@@ -268,10 +271,11 @@ namespace Dead_By_Daylight_Companion.Hook_Counter {
         [Conditional("TRACE")]
         public static void PrintErrorMessage(string staticMessage) {
 #if DEBUG
-            var sb = new StringBuilder(256);
+            IntPtr msg = IntPtr.Zero;
             var written = FormatMessage(FORMAT_MESSAGE.FROM_SYSTEM
-                | FORMAT_MESSAGE.ALLOCATE_BUFFER, IntPtr.Zero, Marshal.GetLastWin32Error(), 0, out sb, sb.Capacity);
-            Debug.WriteLineIf(written > 0, sb.ToString().Substring(0, written));
+                | FORMAT_MESSAGE.ALLOCATE_BUFFER, IntPtr.Zero, Marshal.GetLastWin32Error(), 0, ref msg, 0);
+            Debug.WriteLineIf(written > 0, Marshal.PtrToStringAuto(msg));
+            LocaLFree(msg);
 #else
             Trace.TraceError(staticMessage);
 #endif
